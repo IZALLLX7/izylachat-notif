@@ -1,5 +1,5 @@
 /*
-  DATABASE × VERCEL
+  DATABASE × VERCEL, YA ALLAH BISSMILLAH ISO
 */
 const admin = require('firebase-admin');
 
