@@ -1,3 +1,6 @@
+/*
+  DATABASE × VERCEL
+*/
 const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
