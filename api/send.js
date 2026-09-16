@@ -1,6 +1,3 @@
-/*
-  DATABASE × VERCEL, YA ALLAH BISSMILLAH ISO
-*/
 const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
@@ -52,13 +49,15 @@ module.exports = async (req, res) => {
       }
     }
 
+    const tag = stringData.chatWithUsername || toUsername;
+
     await admin.messaging().send({
       token: toToken,
       notification: { title, body },
       data: stringData,
       android: {
         priority: 'high',
-        notification: { channelId: 'chat_messages' },
+        notification: { channelId: 'chat_messages', tag },
       },
     });
     res.status(200).json({ ok: true });
