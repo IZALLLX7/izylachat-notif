@@ -1,7 +1,3 @@
-// Server INI yang nulis status panggilan ke dokumen Firestore user lain -
-// soalnya Firestore Security Rules di app ini (sama kayak token FCM) gak
-// ngebolehin 1 user nulis LANGSUNG ke dokumen user LAIN dari client. Admin
-// SDK di server selalu bypass Security Rules, jadi ini jalan normal.
 const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
