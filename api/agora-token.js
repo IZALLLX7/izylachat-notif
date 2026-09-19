@@ -1,6 +1,3 @@
-// Server INI yang pegang App Certificate (rahasia) - client Flutter CUMA
-// pegang App ID (boleh publik) + minta token sekali pakai ke sini tiap mau
-// mulai panggilan. Jangan pernah taruh App Certificate di kode Flutter.
 const { RtcTokenBuilder, RtcRole } = require('agora-token');
 
 module.exports = async (req, res) => {
@@ -25,9 +22,6 @@ module.exports = async (req, res) => {
     const appId = process.env.AGORA_APP_ID;
     const appCertificate = process.env.AGORA_APP_CERTIFICATE;
 
-    // Token berlaku 2 jam dari sekarang - lebih dari cukup buat durasi
-    // panggilan apapun, tapi tetap gak selamanya kalau misal tokennya
-    // somehow kebocoran.
     const expirationTimeInSeconds = 7200;
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
