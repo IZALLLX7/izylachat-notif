@@ -9,6 +9,38 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+async function isBlocked(toUsername, fromUsername) {
+  if (!fromUsername) return false;
+  const chatId = [fromUsername, toUsername].sort().join('_');
+  const chat = await db.collection('chats').doc(chatId).get();
+  if (!chat.exists) return false;
+  return chat.get(new admin.firestore.FieldPath('blockedBy', toUsername)) === true;
+}
+
+async function isArchivedByReceiver(toUsername, fromUsername) {
+  if (!fromUsername) return false;
+  const snap = await db
+    .collection('users')
+    .doc(toUsername)
+    .collection('contacts')
+    .doc(fromUsername)
+    .get();
+  return snap.exists && snap.get('archived') === true;
+}
+
+async function resolveTitle(toUsername, fromUsername, fallbackTitle) {
+  if (!fromUsername) return fallbackTitle;
+  const snap = await db
+    .collection('users')
+    .doc(toUsername)
+    .collection('private')
+    .doc('contacts')
+    .get();
+  if (!snap.exists) return fallbackTitle;
+  const custom = snap.get(new admin.firestore.FieldPath('names', fromUsername));
+  return typeof custom === 'string' && custom.trim() ? custom.trim() : fallbackTitle;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -29,6 +61,18 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const fromUsername = data && data.chatWithUsername ? String(data.chatWithUsername) : null;
+
+    if (await isBlocked(toUsername, fromUsername)) {
+      res.status(200).json({ ok: true, skipped: true, reason: 'Pengirim diblokir penerima' });
+      return;
+    }
+
+    if (await isArchivedByReceiver(toUsername, fromUsername)) {
+      res.status(200).json({ ok: true, skipped: true, reason: 'Chat diarsipkan penerima' });
+      return;
+    }
+
     const privateDoc = await db
       .collection('users')
       .doc(toUsername)
@@ -51,9 +95,11 @@ module.exports = async (req, res) => {
 
     const tag = stringData.chatWithUsername || toUsername;
 
+    const finalTitle = await resolveTitle(toUsername, fromUsername, title);
+
     await admin.messaging().send({
       token: toToken,
-      notification: { title, body },
+      notification: { title: finalTitle, body },
       data: stringData,
       android: {
         priority: 'high',
