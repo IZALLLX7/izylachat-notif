@@ -17,15 +17,20 @@ async function isBlocked(toUsername, fromUsername) {
   return chat.get(new admin.firestore.FieldPath('blockedBy', toUsername)) === true;
 }
 
-async function isArchivedByReceiver(toUsername, fromUsername) {
-  if (!fromUsername) return false;
+// Satu kali baca dokumen kontak penerima buat cek diarsipkan / disenyapkan.
+async function getReceiverContactFlags(toUsername, fromUsername) {
+  if (!fromUsername) return { archived: false, muted: false };
   const snap = await db
     .collection('users')
     .doc(toUsername)
     .collection('contacts')
     .doc(fromUsername)
     .get();
-  return snap.exists && snap.get('archived') === true;
+  if (!snap.exists) return { archived: false, muted: false };
+  return {
+    archived: snap.get('archived') === true,
+    muted: snap.get('muted') === true,
+  };
 }
 
 async function resolveTitle(toUsername, fromUsername, fallbackTitle) {
@@ -68,8 +73,15 @@ module.exports = async (req, res) => {
       return;
     }
 
-    if (await isArchivedByReceiver(toUsername, fromUsername)) {
+    const flags = await getReceiverContactFlags(toUsername, fromUsername);
+
+    if (flags.archived) {
       res.status(200).json({ ok: true, skipped: true, reason: 'Chat diarsipkan penerima' });
+      return;
+    }
+
+    if (flags.muted) {
+      res.status(200).json({ ok: true, skipped: true, reason: 'Chat disenyapkan penerima' });
       return;
     }
 
